@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PUFF ZONE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #070404;
+    --bg-2: #0c0606;
+    --glow-deep: #6e0d14;
+    --glow-mid: #9c1420;
+    --red: #ff2436;
+    --red-soft: #ff5b62;
+    --card: #120909;
+    --card-border: rgba(255,60,70,0.16);
+    --text: #f6ece9;
+    --text-dim: #a08a88;
+    --text-faint: #5f4c4b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    overflow:hidden;
+    height:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  body{
+    height:100vh;
+    height:100dvh;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    padding-bottom:0;
+  }
+
+  .glow-bg{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    background:
+      radial-gradient(ellipse 60% 45% at 50% 28%, var(--glow-mid) 0%, rgba(110,13,20,0.55) 32%, rgba(7,4,4,0) 68%),
+      radial-gradient(ellipse 90% 50% at 50% 100%, rgba(255,36,54,0.10) 0%, rgba(7,4,4,0) 60%),
+      var(--bg);
+    pointer-events:none;
+  }
+  .noise{
+    position:fixed; inset:0; z-index:1; opacity:0.035; pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  header{
+    position:relative; z-index:2;
+    display:flex; justify-content:center;
+    padding: clamp(10px, 3vh, 30px) 20px 0;
+    flex-shrink:0;
+  }
+  .brand{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:20px;
+    letter-spacing:6px;
+    color: var(--text-dim);
+  }
+  .brand span{ color: var(--red-soft); }
+
+  main{
+    position:relative; z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    flex:1;
+    min-height:0;
+    overflow:hidden;
+  }
+
+  .pill{
+    margin-top: clamp(6px, 2.5vh, 40px);
+    padding: 11px 26px;
+    border:1px solid rgba(255,90,98,0.35);
+    border-radius:999px;
+    font-size:13px;
+    letter-spacing:0.5px;
+    color: var(--text-dim);
+    background: rgba(255,36,54,0.03);
+    flex-shrink:0;
+  }
+
+  .headline{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: clamp(40px, min(15vw, 11vh), 168px);
+    line-height: 0.92;
+    letter-spacing: 4px;
+    text-align:center;
+    margin-top: clamp(6px, 2vh, 34px);
+    color: var(--text);
+    text-shadow: 0 0 60px rgba(255,36,54,0.28);
+    user-select:none;
+    flex-shrink:0;
+  }
+
+  .stage{
+    position:relative;
+    width:100%;
+    margin-top: clamp(4px, 1.5vh, 18px);
+    z-index:3;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    flex-shrink:1;
+    min-height:0;
+  }
+
+  .carousel-wrap{
+    position:relative;
+    width:100%;
+    height: clamp(220px, 48vh, 460px);
+    padding: 0;
+    overflow: visible;
+    perspective: 1600px;
+    flex-shrink:1;
+  }
+
+  .track{
+    position:relative;
+    width:100%;
+    height:100%;
+    transform-style: preserve-3d;
+    cursor: grab;
+    touch-action: none;
+  }
+  .track.dragging{ cursor:grabbing; }
+
+  .card{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width: clamp(170px, 20vw, 240px);
+    height: clamp(210px, 38vh, 320px);
+    border-radius: 22px;
+    background: linear-gradient(160deg, #170a0a, #0b0505 78%);
+    border: 1px solid var(--card-border);
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    padding: 20px;
+    transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    will-change: transform, opacity;
+    user-select:none;
+    backface-visibility:hidden;
+  }
+  .card .icon-wrap{
+    position:absolute;
+    top: 30px; left:0; right:0;
+    display:flex; justify-content:center;
+    transition: transform 0.45s cubic-bezier(.19,1,.22,1);
+  }
+  .card .icon-wrap svg{ width:104px; height:104px; }
+
+  .card.active{
+    border-color: rgba(255,52,66,0.55);
+    box-shadow: 0 0 0 1px rgba(255,36,54,0.12), 0 30px 60px -18px rgba(255,20,30,0.45), 0 0 80px -12px rgba(255,36,54,0.35);
+  }
+  .card.active .icon-wrap{ transform: translateY(-6px) scale(1.06); }
+
+  .card .tag{
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color: var(--red-soft);
+    margin-bottom:8px;
+    opacity:0;
+    transition: opacity 0.35s ease;
+  }
+  .card.active .tag{ opacity:1; }
+
+  .card h3{
+    font-family:'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing:1px;
+    font-weight:400;
+    color: var(--text);
+  }
+  .card .price{
+    margin-top:6px;
+    font-size:15px;
+    font-weight:700;
+    color: var(--text);
+  }
+  .card .price span{
+    font-weight:400;
+    font-size:12px;
+    color: var(--text-faint);
+    text-decoration: line-through;
+    margin-left:8px;
+  }
+
+  .card .cart-btn{
+    margin-top:14px;
+    width:100%;
+    padding:11px 0;
+    border-radius:12px;
+    border:none;
+    background: var(--red);
+    color:#2a0405;
+    font-family:'Manrope', sans-serif;
+    font-weight:800;
+    font-size:13px;
+    letter-spacing:0.3px;
+    cursor:pointer;
+    opacity:0;
+    transform: translateY(6px);
+    transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
+    pointer-events:none;
+  }
+  .card.active .cart-btn{ opacity:1; transform:translateY(0); pointer-events:auto; }
+  .card .cart-btn:hover{ background: var(--red-soft); }
+  .card .cart-btn:active{ transform: scale(0.97); }
+
+  .controls{
+    display:flex;
+    align-items:center;
+    gap:22px;
+    margin-top: clamp(4px, 1vh, 6px);
+    flex-shrink:0;
+  }
+  .arrow{
+    width:46px; height:46px;
+    border-radius:50%;
+    border:1px solid rgba(255,90,98,0.28);
+    background: rgba(255,36,54,0.04);
+    color: var(--text);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  }
+  .arrow:hover{ border-color: rgba(255,90,98,0.6); background: rgba(255,36,54,0.1); }
+  .arrow:active{ transform: scale(0.92); }
+  .arrow svg{ width:18px; height:18px; }
+
+  .dots{ display:flex; gap:8px; }
+  .dot{
+    width:6px; height:6px; border-radius:50%;
+    background: rgba(255,255,255,0.15);
+    transition: all 0.35s ease;
+  }
+  .dot.active{ background: var(--red); width:20px; border-radius:4px; }
+
+  footer{
+    position:relative; z-index:2;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding: 0 34px;
+    margin-top:auto;
+    padding-top: clamp(10px, 3vh, 50px);
+    padding-bottom: clamp(10px, 2vh, 24px);
+    flex-shrink:0;
+  }
+  .foot-year{
+    font-size:13px;
+    color: var(--text-faint);
+    letter-spacing:1px;
+  }
+
+  @media (max-width:640px){
+    header{ padding-top: clamp(8px, 2.5vh, 22px); }
+    .headline{ letter-spacing:2px; }
+    .carousel-wrap{ height: clamp(190px, 42vh, 320px); }
+    .card{ width: clamp(150px, 44vw, 186px); height: clamp(190px, 34vh, 250px); padding:14px; }
+    .card .icon-wrap{ top:16px; }
+    .card .icon-wrap svg{ width:64px; height:64px; }
+    footer{ padding:0 18px; padding-top: clamp(8px, 2vh, 34px); padding-bottom: clamp(8px, 1.5vh, 18px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow-bg"></div>
+<div class="noise"></div>
+
+<header>
+  <div class="brand">PUFF <span>ZONE</span></div>
+</header>
+
+<main>
+  <div class="pill">Catalog PUFF</div>
+  <h1 class="headline">ТОВАРЫ</h1>
+
+  <div class="stage">
+    <div class="carousel-wrap">
+      <div class="track" id="track">
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="arrow" id="prevBtn" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <div class="dots" id="dots"></div>
+      <div class="arrow" id="nextBtn" aria-label="Вперёд">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="foot-year">by @pxdxz</div>
+</footer>
+
+<script>
+const products = [
+  {
+    name: "EMBER",
+    tag: "Худи",
+    price: "3 490 ₽",
+    old: "4 200 ₽",
+    icon: `<svg viewBox="0 0 100 100" fill="none"><path d="M30 20 L20 32 L28 40 L34 34 V85 H66 V34 L72 40 L80 32 L70 20 Q60 26 50 26 Q40 26 30 20 Z" stroke="#ff3c42" stroke-width="2.5" fill="rgba(255,36,54,0.08)"/><circle cx="50" cy="30" r="4" stroke="#ff3c42" stroke-width="2" fill="none"/></svg>`
+  },
+  {
+    name: "CINDER",
+    tag: "Кепка",
+    price: "1 290 ₽",
+    old: "",
+    icon: `<svg viewBox="0 0 100 100" fill="none"><path d="M15 58 Q50 34 85 58 L82 60 Q50 42 18 60 Z" stroke="#ff3c42" stroke-width="2.5" fill="rgba(255,36,54,0.08)"/><path d="M22 58 Q50 68 78 58 Q78 78 50 82 Q22 78 22 58 Z" stroke="#ff3c42" stroke-width="2.5" fill="rgba(255,36,54,0.08)"/></svg>`
+  },
+  {
+    name: "BLAZE",
+    tag: "Сумка",
+    price: "2 690 ₽",
+    old: "3 100 ₽",
+    icon: `<svg viewBox="0 0 100 100" fill="none"><rect x="24" y="38" width="52" height="46" rx="6" stroke="#ff3c42" stroke-width="2.5" fill="rgba(255,36,54,0.08)"/><path d="M36 38 V28 Q36 16 50 16 Q64 16 64 28 V38" stroke="#ff3c42" stroke-width="2.5"/></svg>`
+  },
+  {
+    name: "MAGMA",
+    tag: "Кроссовки",
+    price: "5 990 ₽",
+    old: "",
+    icon: `<svg viewBox="0 0 100 100" fill="none"><path d="M14 68 Q14 58 26 56 L40 52 Q52 44 62 44 Q72 44 78 52 L86 58 Q88 68 82 72 L20 72 Q14 72 14 68 Z" stroke="#ff3c42" stroke-width="2.5" fill="rgba(255,36,54,0.08)"/><path d="M26 56 L26 46" stroke="#ff3c42" stroke-width="2"/><path d="M34 54 L34 45" stroke="#ff3c42" stroke-width="2"/></svg>`
+  },
+  {
+    name: "ASH",
+    tag: "Термокружка",
+    price: "1 590 ₽",
+    old: "1 900 ₽",
+    icon: `<svg viewBox="0 0 100 100" fill="none"><rect x="34" y="26" width="32" height="54" rx="10" stroke="#ff3c42" stroke-width="2.5" fill="rgba(255,36,54,0.08)"/><path d="M66 40 Q80 40 80 54 Q80 66 66 66" stroke="#ff3c42" stroke-width="2.5"/></svg>`
+  },
+  {
+    name: "SMOKE",
+    tag: "Очки",
+    price: "2 190 ₽",
+    old: "",
+    icon: `<svg viewBox="0 0 100 100" fill="none"><circle cx="34" cy="52" r="16" stroke="#ff3c42" stroke-width="2.5" fill="rgba(255,36,54,0.08)"/><circle cx="66" cy="52" r="16" stroke="#ff3c42" stroke-width="2.5" fill="rgba(255,36,54,0.08)"/><path d="M50 52 h0 M18 48 L10 44 M82 48 L90 44" stroke="#ff3c42" stroke-width="2.5"/></svg>`
+  },
+  {
+    name: "COAL",
+    tag: "Рюкзак",
+    price: "3 990 ₽",
+    old: "4 500 ₽",
+    icon: `<svg viewBox="0 0 100 100" fill="none"><rect x="26" y="30" width="48" height="56" rx="14" stroke="#ff3c42" stroke-width="2.5" fill="rgba(255,36,54,0.08)"/><rect x="38" y="42" width="24" height="16" rx="4" stroke="#ff3c42" stroke-width="2"/></svg>`
+  }
+];
+
+const track = document.getElementById('track');
+const dotsWrap = document.getElementById('dots');
+
+products.forEach((p, i) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.index = i;
+  card.innerHTML = `
+    <div class="icon-wrap">${p.icon}</div>
+    <div class="tag">${p.tag}</div>
+    <h3>${p.name}</h3>
+    <div class="price">${p.price}${p.old ? `<span>${p.old}</span>` : ''}</div>
+    <button class="cart-btn" type="button">В корзину</button>
+  `;
+  track.appendChild(card);
+
+  const dot = document.createElement('div');
+  dot.className = 'dot';
+  dotsWrap.appendChild(dot);
+});
+
+const cards = Array.from(track.children);
+const dots = Array.from(dotsWrap.children);
+const len = cards.length;
+
+
+let position = 0;
+let rafId = null;
+let wheelTimer = null;
+
+function getMetrics(){
+  const w = window.innerWidth;
+  const mobile = w <= 640;
+  if (mobile){
+    return {
+      spacing: Math.max(84, w * 0.33),
+      maxAngle: 30,
+      zStep: 70,
+      range: 3.3
+    };
+  }
+  return {
+    spacing: Math.max(170, Math.min(360, w * 0.145)),
+    maxAngle: 42,
+    zStep: 140,
+    range: Math.max(3.6, Math.min(4.6, w / 480))
+  };
+}
+
+
+function wrapDiff(i, pos){
+  let diff = i - pos;
+  diff -= len * Math.round(diff / len);
+  return diff;
+}
+
+function render(){
+  const { spacing, maxAngle, zStep, range } = getMetrics();
+  const nearest = Math.round(position);
+  const realNearest = ((nearest % len) + len) % len;
+
+  cards.forEach((c, i) => {
+    const diff = wrapDiff(i, position);
+    const absDiff = Math.abs(diff);
+    const x = diff * spacing;
+    const rotate = Math.max(-maxAngle, Math.min(maxAngle, diff * -17));
+    const z = -absDiff * zStep;
+    const scale = Math.max(0.55, 1 - absDiff * 0.15);
+    let opacity = 1 - absDiff * 0.34;
+    if (absDiff > range) opacity = 0;
+    opacity = Math.max(0, Math.min(1, opacity));
+
+    c.style.transform = `translate(-50%,-50%) translate3d(${x}px,0,${z}px) rotateY(${rotate}deg) scale(${scale})`;
+    c.style.opacity = opacity;
+    c.style.zIndex = 1000 - Math.round(absDiff * 10);
+    c.style.pointerEvents = absDiff <= range + 0.15 ? 'auto' : 'none';
+    c.classList.toggle('active', i === realNearest);
+  });
+
+  dots.forEach((d, i) => d.classList.toggle('active', i === realNearest));
+}
+
+function cancelAnim(){
+  if (rafId){ cancelAnimationFrame(rafId); rafId = null; }
+}
+
+function animateTo(target, duration = 480){
+  cancelAnim();
+  const start = position;
+  const delta = target - start;
+  if (Math.abs(delta) < 0.0005){ position = target; render(); return; }
+  const t0 = performance.now();
+  function step(now){
+    const t = Math.min(1, (now - t0) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    position = start + delta * eased;
+    render();
+    if (t < 1){ rafId = requestAnimationFrame(step); }
+    else { position = target; render(); rafId = null; }
+  }
+  rafId = requestAnimationFrame(step);
+}
+
+
+function goTo(i){
+  animateTo(position + wrapDiff(i, position));
+}
+function step(delta){
+  animateTo(Math.round(position) + delta);
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => step(-1));
+document.getElementById('nextBtn').addEventListener('click', () => step(1));
+dots.forEach((d, i) => d.addEventListener('click', () => goTo(i)));
+
+cards.forEach((c, i) => c.addEventListener('click', (e) => {
+  if (e.target.closest('.cart-btn')) return;
+  goTo(i);
+}));
+
+cards.forEach(c => c.querySelector('.cart-btn').addEventListener('click', function(e){
+  e.stopPropagation();
+  const original = this.textContent;
+  this.textContent = 'Добавлено';
+  setTimeout(() => { this.textContent = original; }, 1200);
+}));
+
+
+let dragging = false, dragStartX = 0, dragStartPosition = 0, lastX = 0, lastT = 0, vSamples = [];
+
+track.addEventListener('pointerdown', (e) => {
+  cancelAnim();
+  dragging = true;
+  track.classList.add('dragging');
+  dragStartX = e.clientX;
+  dragStartPosition = position;
+  lastX = e.clientX;
+  lastT = performance.now();
+  vSamples = [];
+  track.setPointerCapture(e.pointerId);
+});
+
+track.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  const { spacing } = getMetrics();
+  const dx = e.clientX - dragStartX;
+  position = dragStartPosition - dx / spacing;
+  const now = performance.now();
+  const dt = now - lastT;
+  if (dt > 0){
+    vSamples.push((e.clientX - lastX) / dt);
+    if (vSamples.length > 5) vSamples.shift();
+  }
+  lastX = e.clientX;
+  lastT = now;
+  render();
+});
+
+function endDrag(){
+  if (!dragging) return;
+  dragging = false;
+  track.classList.remove('dragging');
+  const { spacing } = getMetrics();
+  const avgV = vSamples.length ? vSamples.reduce((a, b) => a + b, 0) / vSamples.length : 0;
+  momentum(-avgV / spacing * 16);
+}
+track.addEventListener('pointerup', endDrag);
+track.addEventListener('pointercancel', endDrag);
+
+function momentum(v){
+  cancelAnim();
+  let vel = v;
+  function frame(){
+    vel *= 0.93;
+    position += vel;
+    render();
+    if (Math.abs(vel) > 0.0015){
+      rafId = requestAnimationFrame(frame);
+    } else {
+      rafId = null;
+      animateTo(Math.round(position), 380);
+    }
+  }
+  rafId = requestAnimationFrame(frame);
+}
+
+
+track.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  cancelAnim();
+  const { spacing } = getMetrics();
+  const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+  position += delta / spacing * 0.6;
+  render();
+  clearTimeout(wheelTimer);
+  wheelTimer = setTimeout(() => animateTo(Math.round(position), 380), 120);
+}, { passive: false });
+
+render();
+window.addEventListener('resize', render);
+</script>
+
+</body>
+</html>
